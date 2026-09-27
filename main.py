@@ -8,69 +8,49 @@ home = Node("Home")
 hilltop = Node("Hilltop")
 town = Node("Town")
 south_relay = Node("SouthRelay")
-gateway = Node("InternetGateway")
 
 for node in [
     home,
     hilltop,
     town,
     south_relay,
-    gateway,
 ]:
     network.add_node(node)
 
 
-# Primary route
 home.connect(hilltop)
 hilltop.connect(town)
 
-# Backup route
 home.connect(south_relay)
 south_relay.connect(town)
 
-# Internet gateway
-town.connect(gateway)
+
+print("\n=== GNOMEMESH STORE-AND-FORWARD TEST ===\n")
 
 
-print("\n=== GNOMEMESH RESILIENCE TEST ===\n")
-
-
-print("TEST 1: Normal connection")
+print("TEST 1: Normal message")
 network.send_message(
     "Home",
     "Town",
-    "Hello, Town!"
+    "Hello from Home!"
 )
 
 
-print("\nTEST 2: Hilltop failure")
+print("\nTEST 2: All routes disabled")
 network.disable_node("Hilltop")
-
-network.send_message(
-    "Home",
-    "Town",
-    "Still connected!"
-)
-
-
-print("\nTEST 3: Both relays offline")
 network.disable_node("SouthRelay")
 
 network.send_message(
     "Home",
     "Town",
-    "This should fail."
+    "This message must wait."
 )
 
 
-print("\nTEST 4: SouthRelay restored")
+print("\nTEST 3: Restore network")
 network.enable_node("SouthRelay")
 
-network.send_message(
-    "Home",
-    "Town",
-    "Connection restored!"
-)
+network.retry_queued_messages()
 
 
 print("\n=== TEST COMPLETE ===")

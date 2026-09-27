@@ -18,22 +18,18 @@ class Network:
         self.disabled_nodes.discard(node_id)
         print(f"[NETWORK] {node_id} is ONLINE")
 
-    def send_message(self, source_id, destination_id, message):
+    def find_route(self, source_id, destination_id):
         if source_id not in self.nodes:
-            print(f"Unknown source: {source_id}")
-            return False
+            return None
 
         if destination_id not in self.nodes:
-            print(f"Unknown destination: {destination_id}")
-            return False
+            return None
 
         if source_id in self.disabled_nodes:
-            print(f"{source_id} is offline.")
-            return False
+            return None
 
         if destination_id in self.disabled_nodes:
-            print(f"{destination_id} is offline.")
-            return False
+            return None
 
         queue = deque([(source_id, [source_id])])
         visited = {source_id}
@@ -42,17 +38,9 @@ class Network:
             current_id, path = queue.popleft()
 
             if current_id == destination_id:
-                print("Route:", " -> ".join(path))
+                return path
 
-                self.nodes[destination_id].receive_message(
-                    source_id,
-                    message
-                )
-                return True
-
-            current_node = self.nodes[current_id]
-
-            for neighbor in current_node.neighbors:
+            for neighbor in self.nodes[current_id].neighbors:
                 neighbor_id = neighbor.node_id
 
                 if (
@@ -64,8 +52,55 @@ class Network:
                         (neighbor_id, path + [neighbor_id])
                     )
 
-        print(
-            f"No route available from {source_id} "
-            f"to {destination_id}."
+        return None
+
+    def send_message(self, source_id, destination_id, message):
+        route = self.find_route(
+            source_id,
+            destination_id
         )
-        return False
+
+        if route is None:
+            self.nodes[source_id].queue_message(
+                destination_id,
+                message
+            )
+
+            print(
+                f"[NETWORK] No route. "
+                f"Message stored at {source_id}."
+            )
+
+            return False
+
+        print("Route:", " -> ".join(route))
+
+        self.nodes[destination_id].receive_message(
+            source_id,
+            message
+        )
+
+        return True
+
+    def retry_queued_messages(self):
+        print("\n[NETWORK] Checking queued messages...")
+
+        for node in self.nodes.values():
+            remaining = []
+
+            for item in node.outbox:
+                delivered = self.send_message(
+                    node.node_id,
+                    item["destination"],
+                    item["message"]
+                )
+
+                if not delivered:
+                    remaining.append(item)
+                else:
+                    print(
+                        f"[NETWORK] Delivered queued message "
+                        f"from {node.node_id}"
+                    )
+
+            node.outbox = remaining
