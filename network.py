@@ -12,11 +12,14 @@ class Network:
     def disable_node(self, node_id):
         if node_id in self.nodes:
             self.disabled_nodes.add(node_id)
+            self.nodes[node_id].set_offline()
             print(f"[NETWORK] {node_id} is OFFLINE")
 
     def enable_node(self, node_id):
-        self.disabled_nodes.discard(node_id)
-        print(f"[NETWORK] {node_id} is ONLINE")
+        if node_id in self.nodes:
+            self.disabled_nodes.discard(node_id)
+            self.nodes[node_id].set_online()
+            print(f"[NETWORK] {node_id} is ONLINE")
 
     def find_route(self, source_id, destination_id):
         if source_id not in self.nodes:
@@ -104,3 +107,21 @@ class Network:
                     )
 
             node.outbox = remaining
+
+    def network_status(self):
+        print("\n=== GNOMEMESH NETWORK STATUS ===")
+
+        for node in self.nodes.values():
+            status = node.status()
+
+            print(
+                f"{status['node']}: "
+                f"{status['status']}"
+            )
+
+            print(
+                f"  Neighbors: "
+                f"{', '.join(status['neighbors']) or 'None'}"
+            )
+
+        print("================================\n")

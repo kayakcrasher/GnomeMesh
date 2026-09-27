@@ -8,12 +8,14 @@ home = Node("Home")
 hilltop = Node("Hilltop")
 town = Node("Town")
 south_relay = Node("SouthRelay")
+community = Node("CommunityCenter")
 
 for node in [
     home,
     hilltop,
     town,
     south_relay,
+    community,
 ]:
     network.add_node(node)
 
@@ -24,33 +26,35 @@ hilltop.connect(town)
 home.connect(south_relay)
 south_relay.connect(town)
 
-
-print("\n=== GNOMEMESH STORE-AND-FORWARD TEST ===\n")
-
-
-print("TEST 1: Normal message")
-network.send_message(
-    "Home",
-    "Town",
-    "Hello from Home!"
-)
+town.connect(community)
 
 
-print("\nTEST 2: All routes disabled")
+print("\n=== GNOMEMESH NODE DISCOVERY TEST ===")
+
+network.network_status()
+
+
+print("TEST 1: Take Hilltop offline")
+
 network.disable_node("Hilltop")
-network.disable_node("SouthRelay")
+
+network.network_status()
+
+
+print("TEST 2: Route around Hilltop")
 
 network.send_message(
     "Home",
-    "Town",
-    "This message must wait."
+    "CommunityCenter",
+    "GNOMEMESH is alive!"
 )
 
 
-print("\nTEST 3: Restore network")
-network.enable_node("SouthRelay")
+print("TEST 3: Restore Hilltop")
 
-network.retry_queued_messages()
+network.enable_node("Hilltop")
+
+network.network_status()
 
 
-print("\n=== TEST COMPLETE ===")
+print("=== TEST COMPLETE ===")
